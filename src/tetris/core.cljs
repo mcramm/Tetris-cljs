@@ -18,64 +18,72 @@
   (move [this world dx dy])
   (can-move? [this world dx dy]))
 
+(defprotocol Rotatable
+  (rotate [this world]))
+
 (defrecord Block [x y])
-(defrecord Formation [blocks])
+(defrecord Formation [loc orientations])
 (defrecord World [curr-formation blocks])
 
-(defn get-block-at [blocks [x y]]
+(defn create-T-formation []
+  (->Formation [27 10]
+                   [[(->Block 0 0)
+                     (->Block 1 0)
+                     (->Block 2 0)
+                     (->Block 1 1)]
+                    [(->Block 1 0)
+                     (->Block 1 1)
+                     (->Block 1 2)
+                     (->Block 0 1)]
+                    [(->Block 0 1)
+                     (->Block 1 1)
+                     (->Block 2 1)
+                     (->Block 1 0)]
+                    [(->Block 0 0)
+                     (->Block 0 1)
+                     (->Block 0 2)
+                     (->Block 1 1)]]))
+
+(defn get-block-at [world [x y]]
   (first (filter (fn [block] (and (= x (:x block))
                                   (= y (:y block))))
-                 blocks)))
+                 (:blocks world))))
 
-(defn get-block-below [world {x :x y :y}]
-  (get-block-at (:blocks world) [x (inc y)]))
+(defn get-blocks-from-formation [formation]
+  (filter (complement nil?) (flatten (first (:orientations formation)))))
 
-(defn new-formation []
-  (->Formation [(->Block 5 5) (->Block 6 6) (->Block 5 6) (->Block 5 7)]))
-
-(defn empty-blocks []
-  (vec (repeatedly 4 (fn [] (vec (repeat 4 nil))))))
-
-(defn create-L-formation []
-  (-> (->Formation (empty-blocks))
-      (assoc-in [:blocks 0 0] (->Block 0 0))
-      (assoc-in [:blocks 1 0] (->Block 1 0))
-      (assoc-in [:blocks 2 0] (->Block 2 0))
-      (assoc-in [:blocks 3 0] (->Block 3 0))))
-
-(defn create-T-formation []
-  (-> (->Formation (empty-blocks))
-      (assoc-in [:blocks 0 0] (->Block 3 0))
-      (assoc-in [:blocks 0 1] (->Block 4 0))
-      (assoc-in [:blocks 0 3] (->Block 5 0))
-      (assoc-in [:blocks 1 1] (->Block 4 1))))
+(defn translated-blocks [formation]
+  (let [[fx fy] (:loc formation)]
+    (mapv (fn [{x :x y :y}] (->Block (+ fx x) (+ fy y))) (get-blocks-from-formation formation))))
 
 (extend-type Formation
   Moveable
   (can-move? [formation world dx dy]
-    (and (every? nil? (flatten (map (fn [row] (map (fn [b] (get-block-at (:blocks world) [(+ (:x b) dx) (+ (:y b) dy)])) row)) (:blocks formation))))
-         (every? true? (flatten (map (fn [row] (map (fn [{x :x y :y}] 
-                                                       (and (< (* (+ dy y) block-size) HEIGHT)
-                                                             (>= (* (+ dx x) block-size) 0)
-                                                             (< (* (+ dx x) block-size) WIDTH)
-                                                            )) (filter #(not (nil? %)) row)))
-                                      (:blocks formation))))))
-
+    (let [[fx fy] (:loc formation)]
+      (and (every? nil? (flatten (mapv (fn [b] (get-block-at world [(+ (:x b) dx) (+ (:y b) dy)])) (translated-blocks formation))))
+           (every? true? (flatten (mapv (fn [{x :x y :y}]
+                                          (and (< (* (+ dy y) block-size) HEIGHT)
+                                               (>= (* (+ dx x) block-size) 0)
+                                               (< (* (+ dx x) block-size) WIDTH)
+                                               ))
+                   (translated-blocks formation)))))))
   (move [formation world dx dy]
     (if (can-move? formation world dx dy)
-      (assoc world :curr-formation (->Formation (map (fn [row]
-                                                       (map (fn [{x :x y :y}]
-                                                              (if (nil? x)
-                                                                nil
-                                                                (->Block (+ dx x) (+ dy y))))
-                                                       row))
-                                                (:blocks formation))))
+      (let [[fx fy] (:loc formation)]
+        (assoc world :curr-formation (->Formation [(+ fx dx) (+ fy dy)] (:orientations formation))))
       (if (> dy 0)
-        (-> world
-            (assoc :blocks (into (:blocks world) (flatten (:blocks formation))))
-            (assoc :curr-formation (create-T-formation)))
+          (-> world
+              (assoc :blocks (into (:blocks world) (translated-blocks formation)))
+              (assoc :curr-formation (create-T-formation)))
         world))))
 
+(extend-type Formation
+  Rotatable
+  (rotate [formation world]
+    (let [os (:orientations formation)]
+      (assoc world :curr-formation (->Formation (:loc formation)
+                                                (conj (vec (rest os))
+                                                      (first os)))))))
 (defn gen-world []
   (->World (create-T-formation)
            []))
@@ -109,8 +117,9 @@
                             :left (move (:curr-formation world) world -1 0)
                             :right (move (:curr-formation world) world 1 0)
                             :drop (move (:curr-formation world) world 0 1)
+                            :rotate (rotate (:curr-formation world) world)
                            world)]
             (doseq [block (into (:blocks new-world)
-                                (flatten (get-in new-world [:curr-formation :blocks])))]
+                                (translated-blocks (:curr-formation new-world)))]
               (draw-block block context))
             (recur new-world)))))
