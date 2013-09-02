@@ -28,7 +28,7 @@
       (<! (timeout 700))
       (>! events :drop)))
 
-(go (loop [s 0]
+(go (loop [s 1]
       (<! (timeout 1000))
       (set! (.-innerHTML (h/by-id "seconds")) (format "%02d" (mod s 60)))
       (set! (.-innerHTML (h/by-id "minutes")) (format "%02d" (mod (Math/floor (/ s 60)) 60)))
@@ -61,22 +61,23 @@
 
 (defn clear-blocks [world]
   (let [first-col-blocks (filter (complement nil?)
-                                 (map (fn [y] (get-block-at world [0 y]))
+                                 (mapv (fn [y] (get-block-at world [0 y]))
                                       (range 0 (/ HEIGHT block-size))))
-        poss-row-nums (map :y first-col-blocks)
-        poss-rows (map (fn [y] (map (fn [x] (get-block-at world [x y])) (range 0 (/ WIDTH block-size)))) poss-row-nums)
-        full-rows (filter #(every? true? (map (complement nil?) %))
-                          poss-rows)]
+        poss-row-nums (mapv :y first-col-blocks)
+        poss-rows (mapv (fn [y] (mapv (fn [x] (get-block-at world [x y])) (range 0 (/ WIDTH block-size)))) poss-row-nums)
+        full-rows (filter #(every? true? (mapv (complement nil?) %))
+                          poss-rows)
+        full-row-nums (mapv (fn [row] (:y (first row))) full-rows)]
 
     (if (<= (count full-rows) 0)
       world
       (loop [new-world (assoc world :completed-rows (+ (count full-rows)
                                                        (:completed-rows world)))
-             rows full-rows]
+             rows full-row-nums]
         (if (empty? rows)
           new-world
-          (let [row (:y (first (first rows)))]
-            (recur (assoc new-world :blocks (delete-row world row)) (rest rows))))))))
+          (let [row (first rows)]
+            (recur (assoc new-world :blocks (delete-row new-world row)) (rest rows))))))))
 
 (go
   (loop [world (gen-world)]
