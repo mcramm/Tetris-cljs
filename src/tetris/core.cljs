@@ -3,7 +3,7 @@
   (:require [cljs.core.async :refer [<! >! chan put! close! timeout alts!]]
             [tetris.helpers :as h]
             [tetris.formations :as formations]
-            [tetris.world :refer [block-size WIDTH HEIGHT]]))
+            [tetris.world :refer [block-size WIDTH HEIGHT get-block-at]]))
 
 (def canvas (h/by-id "canvas"))
 (def context (.getContext canvas "2d"))
@@ -37,6 +37,39 @@
           "Down" (>! events :drop)
           "Up" (>! events :rotate)
           nil)))))
+
+(defn delete-row [world row]
+  (h/log row)
+  (loop [blocks (:blocks world)
+         new-blocks []]
+    (if (empty? blocks)
+      new-blocks
+      (let [b (first blocks)
+            b (cond
+                (nil? b) b
+                (> (:y b) row) b
+                (= (:y b) row) nil
+                (< (:y b) row) (formations/create-block (:x b) (inc (:y b))))]
+        (recur (rest blocks) (conj new-blocks b))))))
+
+(defn clear-blocks [world]
+  (let [first-col-blocks (filter (complement nil?)
+                                 (map (fn [y] (get-block-at world [0 y]))
+                                      (range 0 (/ HEIGHT block-size))))
+        poss-row-nums (map :y first-col-blocks)
+        poss-rows (map (fn [y] (map (fn [x] (get-block-at world [x y])) (range 0 (/ WIDTH block-size)))) poss-row-nums)
+        full-rows (filter #(every? true? (map (complement nil?) %))
+                          poss-rows)]
+
+    (if (<= (count full-rows) 0)
+      world
+      (loop [new-world world
+             rows full-rows]
+        (if (empty? rows)
+          new-world
+          (let [row (:y (first (first rows)))]
+            (recur (assoc new-world :blocks (delete-row world row)) (rest rows))))))))
+
 (go
   (loop [world (gen-world)]
     (let [event (<! events)]
@@ -46,7 +79,8 @@
                             :right (formations/move (:curr-formation world) world 1 0)
                             :drop (formations/move (:curr-formation world) world 0 1)
                             :rotate (formations/rotate (:curr-formation world) world)
-                           world)]
+                           world)
+                new-world (clear-blocks new-world)]
             (doseq [block (into (:blocks new-world)
                                 (formations/translated-blocks (:curr-formation new-world)))]
               (draw-block block context))

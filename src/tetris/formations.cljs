@@ -1,6 +1,6 @@
 (ns tetris.formations
   (:require [tetris.helpers :as h]
-            [tetris.world :refer [block-size WIDTH HEIGHT]]))
+            [tetris.world :refer [block-size WIDTH HEIGHT get-block-at]]))
 
 (defrecord Block [x y])
 (defrecord Formation [loc orientations])
@@ -16,11 +16,6 @@
 (defn- get-blocks-from-formation [formation]
   (filter (complement nil?) (flatten (first (:orientations formation)))))
 
-(defn- get-block-at [world [x y]]
-  (first (filter (fn [block] (and (= x (:x block))
-                                  (= y (:y block))))
-                 (:blocks world))))
-
 
 (defn translated-blocks [formation]
   (let [[fx fy] (:loc formation)]
@@ -28,8 +23,9 @@
 
 (def start-x (/ (Math/floor (/ WIDTH 2)) block-size))
 (def start-y -2)
+(defn create-block [x y]
+  (->Block x y))
 
-(h/log start-x)
 (defn create-T []
   (->Formation [start-x start-y]
                    [[(->Block 0 0)
