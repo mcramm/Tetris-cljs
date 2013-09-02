@@ -10,7 +10,8 @@
   (can-move? [this world dx dy]))
 
 (defprotocol Rotatable
-  (rotate [this world]))
+  (rotate [this world])
+  (can-rotate? [this world]))
 
 
 (defn- get-blocks-from-formation [formation]
@@ -158,8 +159,20 @@
 (extend-type Formation
   Rotatable
   (rotate [formation world]
-    (let [os (:orientations formation)]
-      (assoc world :curr-formation (->Formation (:loc formation)
-                                                (:color formation)
-                                                (conj (vec (rest os))
-                                                      (first os)))))))
+    (if (can-rotate? formation world)
+      (let [os (:orientations formation)]
+        (assoc world :curr-formation (->Formation (:loc formation)
+                                                  (:color formation)
+                                                  (conj (vec (rest os))
+                                                        (first os)))))
+      world))
+  (can-rotate? [formation world]
+    (let [next-o (second (:orientations formation))
+          [fx fy] (:loc formation)]
+      (and (every? nil? (map (fn [{x :x y :y}] (get-block-at world [(+ fx x) (+ fy y)])) next-o))
+           (every? true? (flatten (mapv (fn [{x :x y :y}]
+                                          (and (< (* (+ fy y) block-size) HEIGHT)
+                                               (>= (* (+ fx x) block-size) 0)
+                                               (< (* (+ fx x) block-size) WIDTH)
+                                               )) next-o
+           )))))))
