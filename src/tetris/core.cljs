@@ -15,7 +15,6 @@
 (def context (.getContext canvas "2d"))
 (def next-block-ctx (.getContext next-block "2d"))
 
-
 (defrecord World [curr-formation blocks completed-rows next-formation])
 
 (defn gen-world []
@@ -98,10 +97,14 @@
                         :rotate (formations/rotate (:curr-formation world) world)
                         world)
             new-world (clear-blocks new-world)]
-        (doseq [block (into (:blocks new-world)
-                            (formations/translated-blocks (:curr-formation new-world)))]
-          (draw-block block context))
-        (doseq [block (formations/translated-blocks (:next-formation new-world))]
-          (draw-block block next-block-ctx))
-        (set! (.-innerHTML (h/by-id "completed-rows")) (:completed-rows new-world))
-        (recur new-world)))))
+        (if-not (every? nil? (map (fn [x] (get-block-at world [x 0])) (range 0 (/ WIDTH block-size))))
+          (do (js/alert (str "You Lost. Score was: " (:completed-rows new-world) ". Press OK to play again"))
+            (recur (gen-world)))
+          (do
+            (doseq [block (into (:blocks new-world)
+                                (formations/translated-blocks (:curr-formation new-world)))]
+              (draw-block block context))
+            (doseq [block (formations/translated-blocks (:next-formation new-world))]
+              (draw-block block next-block-ctx))
+            (set! (.-innerHTML (h/by-id "completed-rows")) (:completed-rows new-world))
+            (recur new-world)))))))
