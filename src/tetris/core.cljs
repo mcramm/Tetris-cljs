@@ -3,19 +3,26 @@
   (:require [cljs.core.async :refer [<! >! chan put! close! timeout alts!]]
             [tetris.helpers :as h]
             [tetris.formations :as formations]
-            [tetris.world :refer [block-size WIDTH HEIGHT get-block-at]]))
+            [tetris.world :refer [block-size WIDTH HEIGHT N-WIDTH N-HEIGHT get-block-at]]))
 
 (def canvas (h/by-id "canvas"))
-(def context (.getContext canvas "2d"))
 (set! (.-width canvas) WIDTH)
 (set! (.-height canvas) HEIGHT)
+(def next-block (h/by-id "next-block"))
+(set! (.-width next-block) N-WIDTH)
+(set! (.-height next-block) N-HEIGHT)
 
-(defrecord World [curr-formation blocks completed-rows])
+(def context (.getContext canvas "2d"))
+(def next-block-ctx (.getContext next-block "2d"))
+
+
+(defrecord World [curr-formation blocks completed-rows next-formation])
 
 (defn gen-world []
   (->World (formations/random-formation)
            []
-           0))
+           0
+           (formations/random-formation 1 1)))
 
 (defn draw-block [{x :x y :y color :color} ctx]
   (when-not (nil? x)
@@ -82,16 +89,19 @@
 (go
   (loop [world (gen-world)]
     (let [event (<! events)]
-          (.clearRect context 0 0 WIDTH HEIGHT)
-          (let [new-world (condp = event
-                            :left (formations/move (:curr-formation world) world -1 0)
-                            :right (formations/move (:curr-formation world) world 1 0)
-                            :drop (formations/move (:curr-formation world) world 0 1)
-                            :rotate (formations/rotate (:curr-formation world) world)
-                           world)
-                new-world (clear-blocks new-world)]
-            (doseq [block (into (:blocks new-world)
-                                (formations/translated-blocks (:curr-formation new-world)))]
-              (draw-block block context))
-            (set! (.-innerHTML (h/by-id "completed-rows")) (:completed-rows new-world))
-            (recur new-world)))))
+      (.clearRect context 0 0 WIDTH HEIGHT)
+      (.clearRect next-block-ctx 0 0 N-WIDTH N-HEIGHT)
+      (let [new-world (condp = event
+                        :left (formations/move (:curr-formation world) world -1 0)
+                        :right (formations/move (:curr-formation world) world 1 0)
+                        :drop (formations/move (:curr-formation world) world 0 1)
+                        :rotate (formations/rotate (:curr-formation world) world)
+                        world)
+            new-world (clear-blocks new-world)]
+        (doseq [block (into (:blocks new-world)
+                            (formations/translated-blocks (:curr-formation new-world)))]
+          (draw-block block context))
+        (doseq [block (formations/translated-blocks (:next-formation new-world))]
+          (draw-block block next-block-ctx))
+        (set! (.-innerHTML (h/by-id "completed-rows")) (:completed-rows new-world))
+        (recur new-world)))))

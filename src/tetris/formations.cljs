@@ -16,7 +16,6 @@
 (defn- get-blocks-from-formation [formation]
   (filter (complement nil?) (flatten (first (:orientations formation)))))
 
-
 (defn translated-blocks [formation]
   (let [[fx fy] (:loc formation)]
     (mapv (fn [{x :x y :y}] (->Block (+ fx x) (+ fy y) (:color formation))) (get-blocks-from-formation formation))))
@@ -116,17 +115,23 @@
     (->Block 1 1 nil)
     (->Block 2 1 nil)]])
 
-(defn create-formation [blocks color]
+(defn create-formation [blocks color x y]
   (let [blocks (mapv (fn [o] (mapv (fn [b] (assoc b :color color)) o)) blocks)]
-    (->Formation [start-x start-y] color blocks)))
-      ; (assoc :blocks (apply mapv (fn [b] (assoc b :color color)) (:blocks
+    (->Formation [x y] color blocks)))
 
 (def colors ["rgb(255,0,0)", "rgb(0,255,0)", "rgb(0,0,255)"])
 
 (def formations [T-Formation I-Formation Z-Formation RZ-Formation S-Formation L-Formation RL-Formation])
 
-(defn random-formation []
-  (create-formation (rand-nth formations) (rand-nth colors)))
+(defn random-formation
+  ([]
+   (create-formation (rand-nth formations) (rand-nth colors) start-x start-y))
+  ([x y]
+   (create-formation (rand-nth formations) (rand-nth colors) x y)))
+
+(defn move-to-start [formation]
+  (assoc formation :loc [start-x start-y]))
+
 
 (extend-type Formation
   Moveable
@@ -146,7 +151,8 @@
       (if (> dy 0)
           (-> world
               (assoc :blocks (into (:blocks world) (translated-blocks formation)))
-              (assoc :curr-formation (random-formation)))
+              (assoc :curr-formation (move-to-start (:next-formation world)))
+              (assoc :next-formation (random-formation 1 1)))
         world))))
 
 (extend-type Formation

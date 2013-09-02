@@ -3,15 +3,29 @@
         canvas {
             border: 1px solid black;
         }
+        .container {
+            display:inline-block;
+        }
+        .controls {
+            vertical-align: top;
+            display:inline-block;
+        }
     </style>
     <body>
-        <div id='container'>
+        <div class='container' id='container'>
             <canvas id='canvas'></canvas>
         </div>
-        <div id='time'>
-            <span id='hours'>00</span>:<span id='minutes'>00</span>:<span id='seconds'>00</span>
+        <div class='controls'>
+            <div class='next-block'>
+                <canvas id='next-block'></canvas>
+            </div>
+            <div id='time'>
+                Time: <span id='hours'>00</span>:<span id='minutes'>00</span>:<span id='seconds'>00</span>
+            </div>
+            <div class='score'>
+                Completed Rows: <span id='completed-rows'></span>
+            </div>
         </div>
-        <div id='completed-rows'></div>
     </body>
     <script src='javascripts/app.js'></script>
 </html>
