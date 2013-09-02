@@ -1,13 +1,13 @@
-# tetris
+# Tetris-cljs
 
-A Clojure library designed to ... well, that part is up to you.
+Tetris in Clojurescript
 
 ## Usage
 
-FIXME
+Just open `index.html` and enjoy. Use arrow keys to control.
 
 ## License
 
-Copyright © 2013 FIXME
+Copyright © 2013 Michael Cramm
 
 Distributed under the Eclipse Public License, the same as Clojure.
