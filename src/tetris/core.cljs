@@ -30,12 +30,15 @@
 
 (def events (chan))
 
+(def drop-speed (atom 700))
 (go (while true
-      (<! (timeout 700))
+      (<! (timeout @drop-speed))
       (>! events :drop)))
 
 (go (loop [s 1]
       (<! (timeout 1000))
+      (when (= (mod s 30) 0)
+        (swap! drop-speed (fn [speed] (- speed 70))))
       (set! (.-innerHTML (h/by-id "seconds")) (format "%02d" (mod s 60)))
       (set! (.-innerHTML (h/by-id "minutes")) (format "%02d" (mod (Math/floor (/ s 60)) 60)))
       (set! (.-innerHTML (h/by-id "hours")) (format "%02d" (Math/floor (/ s 3600))))
