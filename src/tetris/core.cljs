@@ -10,11 +10,12 @@
 (set! (.-width canvas) WIDTH)
 (set! (.-height canvas) HEIGHT)
 
-(defrecord World [curr-formation blocks])
+(defrecord World [curr-formation blocks completed-rows])
 
 (defn gen-world []
   (->World (formations/random-formation)
-           []))
+           []
+           0))
 
 (defn draw-block [{x :x y :y color :color} ctx]
   (when-not (nil? x)
@@ -69,7 +70,8 @@
 
     (if (<= (count full-rows) 0)
       world
-      (loop [new-world world
+      (loop [new-world (assoc world :completed-rows (+ (count full-rows)
+                                                       (:completed-rows world)))
              rows full-rows]
         (if (empty? rows)
           new-world
@@ -90,4 +92,5 @@
             (doseq [block (into (:blocks new-world)
                                 (formations/translated-blocks (:curr-formation new-world)))]
               (draw-block block context))
+            (set! (.-innerHTML (h/by-id "completed-rows")) (:completed-rows new-world))
             (recur new-world)))))
