@@ -24,8 +24,15 @@
 (def events (chan))
 
 (go (while true
-    (<! (timeout 700))
-    (>! events :drop)))
+      (<! (timeout 700))
+      (>! events :drop)))
+
+(go (loop [s 0]
+      (<! (timeout 1000))
+      (set! (.-innerHTML (h/by-id "seconds")) (format "%02d" (mod s 60)))
+      (set! (.-innerHTML (h/by-id "minutes")) (format "%02d" (mod (Math/floor (/ s 60)) 60)))
+      (set! (.-innerHTML (h/by-id "hours")) (format "%02d" (Math/floor (/ s 3600))))
+      (recur (inc s))))
 
 (let [input (h/listen js/document :keydown)]
   (go
@@ -80,7 +87,6 @@
                             :rotate (formations/rotate (:curr-formation world) world)
                            world)
                 new-world (clear-blocks new-world)]
-            (h/log (:blocks new-world))
             (doseq [block (into (:blocks new-world)
                                 (formations/translated-blocks (:curr-formation new-world)))]
               (draw-block block context))
