@@ -16,9 +16,9 @@
   (->World (formations/random-formation)
            []))
 
-(defn draw-block [{x :x y :y} ctx]
+(defn draw-block [{x :x y :y color :color} ctx]
   (when-not (nil? x)
-    (set! (.-fillStyle ctx) "rgb(0, 0, 0)")
+    (set! (.-fillStyle ctx) color)
     (.fillRect ctx (* x block-size) (* y block-size) block-size block-size)))
 
 (def events (chan))
@@ -39,7 +39,6 @@
           nil)))))
 
 (defn delete-row [world row]
-  (h/log row)
   (loop [blocks (:blocks world)
          new-blocks []]
     (if (empty? blocks)
@@ -49,7 +48,7 @@
                 (nil? b) b
                 (> (:y b) row) b
                 (= (:y b) row) nil
-                (< (:y b) row) (formations/create-block (:x b) (inc (:y b))))]
+                (< (:y b) row) (formations/create-block (:x b) (inc (:y b)) (:color b)))]
         (recur (rest blocks) (conj new-blocks b))))))
 
 (defn clear-blocks [world]
@@ -81,6 +80,7 @@
                             :rotate (formations/rotate (:curr-formation world) world)
                            world)
                 new-world (clear-blocks new-world)]
+            (h/log (:blocks new-world))
             (doseq [block (into (:blocks new-world)
                                 (formations/translated-blocks (:curr-formation new-world)))]
               (draw-block block context))

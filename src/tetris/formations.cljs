@@ -2,8 +2,8 @@
   (:require [tetris.helpers :as h]
             [tetris.world :refer [block-size WIDTH HEIGHT get-block-at]]))
 
-(defrecord Block [x y])
-(defrecord Formation [loc orientations])
+(defrecord Block [x y color])
+(defrecord Formation [loc color orientations])
 
 (defprotocol Moveable
   (move [this world dx dy])
@@ -19,113 +19,114 @@
 
 (defn translated-blocks [formation]
   (let [[fx fy] (:loc formation)]
-    (mapv (fn [{x :x y :y}] (->Block (+ fx x) (+ fy y))) (get-blocks-from-formation formation))))
+    (mapv (fn [{x :x y :y}] (->Block (+ fx x) (+ fy y) (:color formation))) (get-blocks-from-formation formation))))
 
 (def start-x (/ (Math/floor (/ WIDTH 2)) block-size))
 (def start-y -2)
-(defn create-block [x y]
-  (->Block x y))
+(defn create-block [x y color]
+  (->Block x y color))
 
-(defn create-T []
-  (->Formation [start-x start-y]
-                   [[(->Block 0 0)
-                     (->Block 1 0)
-                     (->Block 2 0)
-                     (->Block 1 1)]
-                    [(->Block 1 0)
-                     (->Block 1 1)
-                     (->Block 1 2)
-                     (->Block 0 1)]
-                    [(->Block 0 1)
-                     (->Block 1 1)
-                     (->Block 2 1)
-                     (->Block 1 0)]
-                    [(->Block 0 0)
-                     (->Block 0 1)
-                     (->Block 0 2)
-                     (->Block 1 1)]]))
+(def T-Formation
+  [[(->Block 0 0 nil)
+    (->Block 1 0 nil)
+    (->Block 2 0 nil)
+    (->Block 1 1 nil)]
+   [(->Block 1 0 nil)
+    (->Block 1 1 nil)
+    (->Block 1 2 nil)
+    (->Block 0 1 nil)]
+   [(->Block 0 1 nil)
+    (->Block 1 1 nil)
+    (->Block 2 1 nil)
+    (->Block 1 0 nil)]
+   [(->Block 0 0 nil)
+    (->Block 0 1 nil)
+    (->Block 0 2 nil)
+    (->Block 1 1 nil)]])
 
-(defn create-I []
-  (->Formation [start-x start-y]
-                   [[(->Block 0 0)
-                     (->Block 0 1)
-                     (->Block 0 2)
-                     (->Block 0 3)]
-                    [(->Block 0 0)
-                     (->Block 1 0)
-                     (->Block 2 0)
-                     (->Block 3 0)]]))
+(def I-Formation
+  [[(->Block 0 0 nil)
+    (->Block 0 1 nil)
+    (->Block 0 2 nil)
+    (->Block 0 3 nil)]
+   [(->Block 0 0 nil)
+    (->Block 1 0 nil)
+    (->Block 2 0 nil)
+    (->Block 3 0 nil)]])
 
-(defn create-Z []
-  (->Formation [start-x start-y]
-               [[(->Block 0 0)
-                 (->Block 1 0)
-                 (->Block 1 1)
-                 (->Block 2 1)]
-                [(->Block 1 0)
-                 (->Block 0 1)
-                 (->Block 1 1)
-                 (->Block 0 2)]]))
+(def Z-Formation
+  [[(->Block 0 0 nil)
+    (->Block 1 0 nil)
+    (->Block 1 1 nil)
+    (->Block 2 1 nil)]
+   [(->Block 1 0 nil)
+    (->Block 0 1 nil)
+    (->Block 1 1 nil)
+    (->Block 0 2 nil)]])
 
-(defn create-RZ []
-  (->Formation [start-x start-y]
-               [[(->Block 0 1)
-                 (->Block 1 1)
-                 (->Block 1 0)
-                 (->Block 2 0)]
-                [(->Block 0 0)
-                 (->Block 0 1)
-                 (->Block 1 1)
-                 (->Block 1 2)]]))
+(def RZ-Formation
+  [[(->Block 0 1 nil)
+    (->Block 1 1 nil)
+    (->Block 1 0 nil)
+    (->Block 2 0 nil)]
+   [(->Block 0 0 nil)
+    (->Block 0 1 nil)
+    (->Block 1 1 nil)
+    (->Block 1 2 nil)]])
 
-(defn create-S []
-  (->Formation [start-x start-y]
-               [[(->Block 0 0)
-                 (->Block 0 1)
-                 (->Block 1 0)
-                 (->Block 1 1)]]))
+(def S-Formation
+  [[(->Block 0 0 nil)
+    (->Block 0 1 nil)
+    (->Block 1 0 nil)
+    (->Block 1 1 nil)]])
 
-(defn create-L []
-  (->Formation [start-x start-y]
-               [[(->Block 0 0)
-                 (->Block 0 1)
-                 (->Block 0 2)
-                 (->Block 1 2)]
-                [(->Block 0 1)
-                 (->Block 1 1)
-                 (->Block 2 1)
-                 (->Block 2 0)]
-                [(->Block 0 0)
-                 (->Block 1 0)
-                 (->Block 1 1)
-                 (->Block 1 2)]
-                [(->Block 0 0)
-                 (->Block 1 0)
-                 (->Block 2 0)
-                 (->Block 0 1)]]))
-(defn create-RL []
-  (->Formation [start-x start-y]
-               [[(->Block 1 0)
-                 (->Block 1 1)
-                 (->Block 1 2)
-                 (->Block 0 2)]
-                [(->Block 0 0)
-                 (->Block 1 0)
-                 (->Block 2 0)
-                 (->Block 2 1)]
-                [(->Block 0 0)
-                 (->Block 0 1)
-                 (->Block 0 2)
-                 (->Block 1 0)]
-                [(->Block 0 0)
-                 (->Block 0 1)
-                 (->Block 1 1)
-                 (->Block 2 1)]]))
+(def L-Formation
+  [[(->Block 0 0 nil)
+    (->Block 0 1 nil)
+    (->Block 0 2 nil)
+    (->Block 1 2 nil)]
+   [(->Block 0 1 nil)
+    (->Block 1 1 nil)
+    (->Block 2 1 nil)
+    (->Block 2 0 nil)]
+   [(->Block 0 0 nil)
+    (->Block 1 0 nil)
+    (->Block 1 1 nil)
+    (->Block 1 2 nil)]
+   [(->Block 0 0 nil)
+    (->Block 1 0 nil)
+    (->Block 2 0 nil)
+    (->Block 0 1 nil)]])
 
-(def formations [create-T create-I create-Z create-RZ create-S create-L create-RL])
+(def RL-Formation
+  [[(->Block 1 0 nil)
+    (->Block 1 1 nil)
+    (->Block 1 2 nil)
+    (->Block 0 2 nil)]
+   [(->Block 0 0 nil)
+    (->Block 1 0 nil)
+    (->Block 2 0 nil)
+    (->Block 2 1 nil)]
+   [(->Block 0 0 nil)
+    (->Block 0 1 nil)
+    (->Block 0 2 nil)
+    (->Block 1 0 nil)]
+   [(->Block 0 0 nil)
+    (->Block 0 1 nil)
+    (->Block 1 1 nil)
+    (->Block 2 1 nil)]])
+
+(defn create-formation [blocks color]
+  (let [blocks (mapv (fn [o] (mapv (fn [b] (assoc b :color color)) o)) blocks)]
+    (->Formation [start-x start-y] color blocks)))
+      ; (assoc :blocks (apply mapv (fn [b] (assoc b :color color)) (:blocks
+
+(def colors ["rgb(255,0,0)", "rgb(0,255,0)", "rgb(0,0,255)"])
+
+(def formations [T-Formation I-Formation Z-Formation RZ-Formation S-Formation L-Formation RL-Formation])
 
 (defn random-formation []
-  ((rand-nth formations)))
+  (create-formation (rand-nth formations) (rand-nth colors)))
 
 (extend-type Formation
   Moveable
@@ -141,7 +142,7 @@
   (move [formation world dx dy]
     (if (can-move? formation world dx dy)
       (let [[fx fy] (:loc formation)]
-        (assoc world :curr-formation (->Formation [(+ fx dx) (+ fy dy)] (:orientations formation))))
+        (assoc world :curr-formation (->Formation [(+ fx dx) (+ fy dy)] (:color formation) (:orientations formation))))
       (if (> dy 0)
           (-> world
               (assoc :blocks (into (:blocks world) (translated-blocks formation)))
@@ -153,5 +154,6 @@
   (rotate [formation world]
     (let [os (:orientations formation)]
       (assoc world :curr-formation (->Formation (:loc formation)
+                                                (:color formation)
                                                 (conj (vec (rest os))
                                                       (first os)))))))
